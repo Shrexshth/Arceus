@@ -9,6 +9,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
+    if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+      return NextResponse.json({ error: 'Invalid table name format' }, { status: 400 });
+    }
+
     // Call local TrueForge agent running via npx
     const trueForgeUrl = process.env.TRUEFORGE_URL || 'http://localhost:8080/api/chat';
     const prompt = `Please use the Postgres MCP tool to insert the following data into the ${tableName} table:\n${JSON.stringify(data, null, 2)}`;

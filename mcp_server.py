@@ -1,6 +1,8 @@
 import os
 import psycopg2
 from mcp.server.mcpserver import MCPServer
+from psycopg2 import sql
+from schema_introspector import introspect
 
 mcp = MCPServer("Arceus Database Connector")
 
@@ -52,10 +54,23 @@ def insert_mock_data(table_name: str, rows: list) -> str:
         
         # We assume all rows in the list are dicts with the same keys
         columns = list(rows[0].keys())
-        col_names = ", ".join(columns)
-        placeholders = ", ".join(["%s"] * len(columns))
         
-        insert_query = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
+        # 1. Validate table and columns against schema
+        schema = introspect()
+        if table_name not in schema["tables"]:
+            return f"Error: Table '{table_name}' does not exist in the schema."
+            
+        valid_columns = {c["column"] for c in schema["tables"][table_name]}
+        for col in columns:
+            if col not in valid_columns:
+                return f"Error: Column '{col}' does not exist in table '{table_name}'."
+        
+        # 2. Build safe query using psycopg2.sql
+        insert_query = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+            sql.Identifier(table_name),
+            sql.SQL(", ").join(map(sql.Identifier, columns)),
+            sql.SQL(", ").join(sql.Placeholder() * len(columns))
+        )
         
         # Prepare the list of tuples for executiom
         data_tuples = []
