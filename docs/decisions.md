@@ -59,3 +59,13 @@
 **Trade-off accepted:** Slightly more code than a one-liner `networkx` call, but avoids adding a dependency for a single function.
 **Confidence:** High
 **Reversible:** Yes
+
+---
+
+## [2026-08-28] Faker Column Mapping — Name-Pattern First, Type Fallback
+**Decision:** Two-tier mapping: first match column name against 20+ regex patterns (email→`fake.email()`, sku→`bothify("???-#####")`), then fall back to type-based generation. Unsupported types are flagged visibly.
+**Alternatives considered:** Type-only mapping (ignore column names), LLM-based column interpretation, manual mapping config file.
+**Why this one:** Name patterns produce dramatically more realistic data (a column called `email` gets a real email, not random varchar). Type fallback catches everything else. No LLM call needed — fast, deterministic, reproducible with `Faker.seed(42)`.
+**Trade-off accepted:** Pattern list is manually curated — won't catch every domain-specific column name (e.g., `ssn`, `iban`). Can extend the list as needed.
+**Confidence:** High
+**Reversible:** Yes
