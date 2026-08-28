@@ -2,12 +2,12 @@ Last verified: 2026-08-28
 
 # Arceus - Agentic Mock Data Generator
 
-## Current Phase: Phase 1 (Schema Introspection) — DONE, awaiting approval to proceed to Phase 2
+## Current Phase: Phase 3 (Tier 1 Faker Generation) — DONE, awaiting approval to proceed to Phase 4
 
 ## Phasing
 1. ✅ Schema introspection
-2. ⬜ Dependency graph + generation order
-3. ⬜ Tier 1 Faker generation respecting types/constraints
+2. ✅ Dependency graph + generation order
+3. ✅ Tier 1 Faker generation respecting types/constraints
 4. ⬜ FK-aware value resolution across tables
 5. ⬜ Sandbox + schema cloning
 6. ⬜ Approval UI

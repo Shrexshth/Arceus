@@ -4,8 +4,12 @@ export async function POST(req: Request) {
   try {
     const { tableName, rowCount } = await req.json();
 
-    if (!tableName || !rowCount) {
+    if (!tableName || rowCount === undefined || rowCount === null) {
       return NextResponse.json({ error: 'Missing table name or row count' }, { status: 400 });
+    }
+
+    if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 100) {
+      return NextResponse.json({ error: 'Row count must be an integer between 1 and 100' }, { status: 400 });
     }
 
     if (tableName !== 'users') {
@@ -14,11 +18,11 @@ export async function POST(req: Request) {
 
     // Mock data generation for hackathon since TrueForge agent API is stubbed
     const data = [];
+    const timestamp = Date.now();
     for (let i = 1; i <= rowCount; i++) {
       data.push({
-        id: i,
         name: `Generated User ${i}`,
-        email: `user${i}@example.com`,
+        email: `user${timestamp}_${i}@example.com`,
         created_at: new Date().toISOString()
       });
     }

@@ -68,6 +68,8 @@ def introspect_primary_keys(cur) -> dict:
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
+            AND tc.table_name = kcu.table_name
+            AND tc.table_catalog = kcu.table_catalog
         WHERE tc.constraint_type = 'PRIMARY KEY'
           AND tc.table_schema = 'public'
         ORDER BY tc.table_name, kcu.ordinal_position;
@@ -91,9 +93,17 @@ def introspect_foreign_keys(cur) -> list:
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
-        JOIN information_schema.constraint_column_usage ccu
-            ON ccu.constraint_name = tc.constraint_name
-            AND ccu.table_schema = tc.table_schema
+            AND tc.table_name = kcu.table_name
+            AND tc.table_catalog = kcu.table_catalog
+        JOIN information_schema.referential_constraints rc
+            ON rc.constraint_name = tc.constraint_name
+            AND rc.constraint_schema = tc.table_schema
+            AND rc.constraint_catalog = tc.table_catalog
+        JOIN information_schema.key_column_usage ccu
+            ON ccu.constraint_name = rc.unique_constraint_name
+            AND ccu.table_schema = rc.unique_constraint_schema
+            AND ccu.table_catalog = rc.unique_constraint_catalog
+            AND ccu.ordinal_position = kcu.position_in_unique_constraint
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_schema = 'public'
         ORDER BY tc.table_name;
@@ -112,6 +122,8 @@ def introspect_unique_constraints(cur) -> dict:
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
+            AND tc.table_name = kcu.table_name
+            AND tc.table_catalog = kcu.table_catalog
         WHERE tc.constraint_type = 'UNIQUE'
           AND tc.table_schema = 'public'
         ORDER BY tc.table_name, tc.constraint_name, kcu.ordinal_position;

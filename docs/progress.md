@@ -62,3 +62,21 @@
 **How it was tested:** Ran `python3 schema_introspector.py` inside `.venv` against live Postgres container with the 4-table test schema.
 **Result:** All 4 tables detected. All 24 columns with correct types/nullability/defaults. All 4 PKs found. All 3 FK relationships correct (`orders→users`, `order_items→orders`, `order_items→products`). All 3 unique constraints found including composite `(order_id, product_id)`.
 **Open issues:** none — awaiting approval to proceed to Phase 2.
+
+---
+
+## [2026-08-28] Phase 2: Dependency Graph + Generation Order
+**Status:** done
+**What was done:** Created `dependency_graph.py` using Kahn's topological sort. Builds adjacency list from FK relationships, produces a generation order (parents before children), and explicitly detects/flags self-referencing FKs and circular dependencies instead of guessing.
+**How it was tested:** Ran `python3 dependency_graph.py` inside `.venv` against live Postgres container with 4-table schema (`users`, `products`, `orders`, `order_items`).
+**Result:** Correct order: `products → users → orders → order_items`. All 3 FK edges respected. 0 self-referencing FKs. 0 circular dependencies. Composite unique constraint `(order_id, product_id)` carried through.
+**Open issues:** none
+
+---
+
+## [2026-08-28] Phase 3: Tier 1 Faker Generation
+**Status:** done
+**What was done:** Created `data_generator.py` with 20+ name-pattern→Faker mappings (email, name, phone, sku, status, category, etc.) and type-based fallbacks for all standard Postgres types. Respects `max_length`, `numeric(p,s)` precision, nullable (15% null chance), and single-column unique constraints. Serial PKs are skipped (DB auto-assigns). FK columns output as `null` placeholders with visible `⏳ pending Phase 4` flags. Unsupported types are flagged visibly, never silently guessed.
+**How it was tested:** Ran `python3 data_generator.py` inside `.venv` against live Postgres container with 4-table schema. Generated 5 rows per table (20 rows total).
+**Result:** 20 rows generated across 4 tables in correct dependency order. All emails unique. All SKUs unique. Prices within `numeric(10,2)`. Timestamps ISO-formatted within 2-year range. FK columns correctly deferred. 0 unsupported type flags.
+**Open issues:** none

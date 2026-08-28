@@ -14,15 +14,27 @@ No more manual SQL inserts. Just instant, schema-aware data generation with full
 To spin up Arceus locally, you will need to start three distinct services.
 
 ### 1. Start the Database
-Bring up the local PostgreSQL database using Docker Compose.
+Bring up the local PostgreSQL database using Docker Compose. Since the test schema (`init.sql`) only runs on an empty database volume, ensure any old volumes are cleared first:
 ```bash
+docker-compose down -v
 docker-compose up -d
 ```
 
-### 2. Start the TrueForge Agent
-Run the TrueForge agent harness via `npx`. This orchestrates the data generation and handles MCP execution.
+### 2. Configure and Start the Python MCP Server
+Arceus uses a Python-based Model Context Protocol (MCP) server to safely connect to Postgres. You must install its dependencies and run it so TrueForge can orchestrate it.
+
+First, set up the Python environment:
 ```bash
-npx @truefoundry/trueforge
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Start the TrueForge Agent
+Run the TrueForge agent harness via `npx` and register the local MCP server.
+```bash
+# Provide the execution command for the MCP server so TrueForge can launch it
+npx @truefoundry/trueforge --mcp-server "python3 mcp_server.py"
 ```
 
 ### 3. Start the Arceus Dashboard
