@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function ArceusDashboard() {
   const [status, setStatus] = useState<"pending" | "generating" | "generated" | "submitting" | "success" | "error">("pending");
   const [tableName, setTableName] = useState("users");
+  const [generatedTableName, setGeneratedTableName] = useState("");
   const [rowCount, setRowCount] = useState(5);
   const [data, setData] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -13,6 +14,7 @@ export default function ArceusDashboard() {
     setStatus("generating");
     setErrorMessage("");
     setData([]);
+    setGeneratedTableName("");
 
     try {
       const response = await fetch("/api/generate", {
@@ -32,6 +34,7 @@ export default function ArceusDashboard() {
       }
       
       setData(responseData.data);
+      setGeneratedTableName(tableName);
       setStatus("generated");
     } catch (error: any) {
       setStatus("error");
@@ -48,7 +51,7 @@ export default function ArceusDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tableName,
+          tableName: generatedTableName,
           data: data
         })
       });
@@ -68,6 +71,7 @@ export default function ArceusDashboard() {
   const handleClear = () => {
     setStatus("pending");
     setData([]);
+    setGeneratedTableName("");
     setErrorMessage("");
   };
 
