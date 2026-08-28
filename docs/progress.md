@@ -74,3 +74,11 @@
   - Initialized `mcp_server.py` with a basic FastMCP server that exposes a `read_database_schema` tool.
 - **Errors Flagged:** None. Docker daemon is running and Postgres container started successfully.
 - **Current Status:** Architecture simplified. MCP server initialized and local database is running.
+
+---
+### 📅 [2026-08-28 21:45 IST] - Git Configuration Fix
+- **What was needed:** Missing `.gitignore` was causing repo bloat (virtual environments and caches were pushed to remote).
+- **What was done:** 
+  - Created `.gitignore` in the project root with standard exclusions for Node.js (`node_modules/`), Next.js (`.next/`), Python (`.venv/`, `__pycache__/`, `.env`), and macOS (`.DS_Store`).
+- **Resolved Issues:** 🟢 Critical: Missing `.gitignore` causing bloat.
+- **Current Status:** Git exclusions configured.
