@@ -19,10 +19,21 @@ Bring up the local PostgreSQL database using Docker Compose.
 docker-compose up -d
 ```
 
-### 2. Start the TrueForge Agent
-Run the TrueForge agent harness via `npx`. This orchestrates the data generation and handles MCP execution.
+### 2. Configure and Start the Python MCP Server
+Arceus uses a Python-based Model Context Protocol (MCP) server to safely connect to Postgres. You must install its dependencies and run it so TrueForge can orchestrate it.
+
+First, set up the Python environment:
 ```bash
-npx @truefoundry/trueforge
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Start the TrueForge Agent
+Run the TrueForge agent harness via `npx` and register the local MCP server.
+```bash
+# Provide the execution command for the MCP server so TrueForge can launch it
+npx @truefoundry/trueforge --mcp-server "python3 mcp_server.py"
 ```
 
 ### 3. Start the Arceus Dashboard
