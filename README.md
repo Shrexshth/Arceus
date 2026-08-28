@@ -14,8 +14,9 @@ No more manual SQL inserts. Just instant, schema-aware data generation with full
 To spin up Arceus locally, you will need to start three distinct services.
 
 ### 1. Start the Database
-Bring up the local PostgreSQL database using Docker Compose.
+Bring up the local PostgreSQL database using Docker Compose. Since the test schema (`init.sql`) only runs on an empty database volume, ensure any old volumes are cleared first:
 ```bash
+docker-compose down -v
 docker-compose up -d
 ```
 
