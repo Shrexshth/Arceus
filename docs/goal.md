@@ -1,30 +1,53 @@
-# Project Goals & Architecture: Arceus
+Last verified: 2026-08-28
 
-**Structure Change Log:**
-- *2026-08-28:* Initialized Arceus architecture (Next.js + TrueForge).
+# Arceus - Agentic Mock Data Generator
 
-## Onboarding Stub
-Welcome to Arceus. We are building an agentic tool for developers that reads a database schema via MCP, writes a Python script in a secure sandbox to generate realistic mock data, and waits for a human to click "Approve" before injecting it into the database. It exists to solve the pain of manually writing fake data for UI testing.
+## Current Phase: Phase 1 (Schema Introspection) — DONE, awaiting approval to proceed to Phase 2
 
-## End-to-End Structure & Data Flow
-1. **Frontend:** Next.js (TailwindCSS) dashboard.
-2. **Backend/Harness:** TrueForge running locally.
-3. **Tools (MCP):** Database Connector (Reads schema, executes inserts).
-4. **Sandbox:** TrueForge Python Sandbox (runs data generation script).
-5. **Flow:** User Prompt -> TrueForge queries schema via MCP -> TrueForge writes generation script -> Sandbox executes script -> JSON preview sent to Frontend -> Human Approves -> TrueForge executes SQL injection via MCP.
+## Phasing
+1. ✅ Schema introspection
+2. ⬜ Dependency graph + generation order
+3. ⬜ Tier 1 Faker generation respecting types/constraints
+4. ⬜ FK-aware value resolution across tables
+5. ⬜ Sandbox + schema cloning
+6. ⬜ Approval UI
+7. ⬜ Insert execution
+8. ⬜ (Stretch) Tier 2 sampling, then edge-case mode
 
-## Tech Stack & Versions
-- Next.js (App Router, Latest)
-- TrueForge (Latest CLI/Docker)
-- PostgreSQL or SQLite (for dummy target database)
-- Qodo (GitHub Integration)
+## Feature List
 
-## Metrics/KPIs (Definition of Success)
-- 1 successful end-to-end execution of schema reading -> sandbox generation -> human approval -> DB injection.
-- 1 clean PR reviewed by Qodo documented in README.
-- 1 demo video (<3 mins) showing the "Approve" button.
+### MUST-HAVE (Day 1)
+- **DB Connector**: Introspects Postgres & MySQL schemas (tables, columns, types, nullability, foreign keys, unique constraints).
+- **Dependency Graph Builder**: Orders table generation so parent tables (referenced by FKs) are generated before child tables.
+- **Faker-based Generator (Tier 1)**: Type/name-pattern based field mapping (e.g., email columns get emails, dates respect constraints).
+- **FK Resolution**: Child table foreign key columns must reference actual generated/existing IDs from the parent table, not random values.
+- **Sandbox Execution & Schema Cloning**: Generation script runs in an isolated sandbox against a CLONED schema created by the tool (never the live/production DB).
+- **Approval UI**: Next.js dashboard showing generated rows per table, row counts, a clear "cloned schema target" warning, and Approve/Reject actions.
+- **Insert Action**: Executes the SQL inserts against the cloned schema upon approval, showing success/failure counts.
 
-## Rough Roadmap
-- **Built:** Docs.
-- **Next:** TrueForge setup, Qodo integration, basic Next.js UI.
-- **Out of Scope:** Complex authentication, multi-database support (sticking to one DB type for the demo).
+### STRETCH (Day 2 AM - Only after MUST-HAVE is verified)
+- **Tier 2 Statistical Sampling**: Sample real value distributions for tables with ≥10 existing rows to bias generation.
+- **Edge-case Mode**: Generate N rows designed to break assumptions (nulls, unicode, boundary values, max-length strings, etc.).
+
+## Tech Stack & Justification
+- **Frontend**: Next.js (App Router), React, Tailwind CSS.
+  *Justification*: Fast interactive dashboard with built-in API routes for backend orchestration.
+- **Backend**: Python, `psycopg2`, `Faker`, `networkx`.
+  *Justification*: Robust libraries for DB introspection, graph resolution, and data generation.
+- **Agent Harness**: TrueForge (via `npx @truefoundry/trueforge`) + MCP.
+  *Justification*: MCP standardizes the agent's interaction with the database. TrueForge provides sandbox execution.
+- **Database**: PostgreSQL (primary target), MySQL (secondary).
+
+## Data Flow Diagram
+```mermaid
+graph TD
+    A[(Live Database)] -->|1. Introspection| B(Schema Analyzer)
+    B -->|2. Tables, FKs, Types| C(Dependency Graph Builder)
+    A -->|3. Schema Export/Import| D[(Cloned Database)]
+    C -->|4. Ordered Schema Context| E(Agent / Python Sandbox)
+    E -->|5. Tier 1 Faker Logic| F[JSON Mock Data]
+    F -->|6. Review| G{Next.js Approval UI}
+    G -->|7a. Reject| H[Discard Data]
+    G -->|7b. Approve| I(SQL Insert Executor)
+    I -->|8. Execute Inserts| D
+```
