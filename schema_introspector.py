@@ -91,9 +91,13 @@ def introspect_foreign_keys(cur) -> list:
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
-        JOIN information_schema.constraint_column_usage ccu
-            ON ccu.constraint_name = tc.constraint_name
-            AND ccu.table_schema = tc.table_schema
+        JOIN information_schema.referential_constraints rc
+            ON rc.constraint_name = tc.constraint_name
+            AND rc.constraint_schema = tc.table_schema
+        JOIN information_schema.key_column_usage ccu
+            ON ccu.constraint_name = rc.unique_constraint_name
+            AND ccu.table_schema = rc.unique_constraint_schema
+            AND ccu.ordinal_position = kcu.position_in_unique_constraint
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_schema = 'public'
         ORDER BY tc.table_name;
