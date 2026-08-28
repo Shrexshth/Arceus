@@ -16,6 +16,12 @@ export default function ArceusDashboard() {
     setData([]);
     setGeneratedTableName("");
 
+    if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 100) {
+      setStatus("error");
+      setErrorMessage("Row count must be between 1 and 100");
+      return;
+    }
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -124,7 +130,10 @@ export default function ArceusDashboard() {
             <input 
               type="number" 
               value={rowCount}
-              onChange={(e) => setRowCount(parseInt(e.target.value))}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setRowCount(isNaN(val) ? "" as any : val);
+              }}
               disabled={status === "generating" || status === "submitting"}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50"
               min={1} max={100}
@@ -133,9 +142,9 @@ export default function ArceusDashboard() {
           <div>
             <button 
               onClick={handleGenerate}
-              disabled={status === "generating" || status === "submitting" || !tableName || rowCount < 1}
+              disabled={status === "generating" || status === "submitting" || !tableName || Number(rowCount) < 1 || Number(rowCount) > 100}
               className={`px-6 py-3 rounded-lg font-semibold uppercase tracking-wider text-sm transition-all border shadow-sm ${
-                status === "generating" || status === "submitting" || !tableName || rowCount < 1
+                status === "generating" || status === "submitting" || !tableName || Number(rowCount) < 1 || Number(rowCount) > 100
                   ? "bg-cyan-600/20 text-cyan-500/50 cursor-not-allowed border-cyan-500/10"
                   : "bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
               }`}

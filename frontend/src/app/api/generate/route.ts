@@ -4,8 +4,12 @@ export async function POST(req: Request) {
   try {
     const { tableName, rowCount } = await req.json();
 
-    if (!tableName || !rowCount) {
+    if (!tableName || rowCount === undefined || rowCount === null) {
       return NextResponse.json({ error: 'Missing table name or row count' }, { status: 400 });
+    }
+
+    if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 100) {
+      return NextResponse.json({ error: 'Row count must be an integer between 1 and 100' }, { status: 400 });
     }
 
     if (tableName !== 'users') {
