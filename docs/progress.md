@@ -82,3 +82,13 @@
   - Created `.gitignore` in the project root with standard exclusions for Node.js (`node_modules/`), Next.js (`.next/`), Python (`.venv/`, `__pycache__/`, `.env`), and macOS (`.DS_Store`).
 - **Resolved Issues:** 🟢 Critical: Missing `.gitignore` causing bloat.
 - **Current Status:** Git exclusions configured.
+
+---
+### 📅 [2026-08-28 21:50 IST] - Core Approval Loop
+- **What was needed:** Create API route for approval and wire up the UI to execute TrueForge injection.
+- **What was done:** 
+  - Created `/api/approve/route.ts` to accept POST requests and instruct the local TrueForge agent to use the Postgres MCP tool.
+  - Rewrote `page.tsx` to include client-side state (`"use client"`), enabled the 'Approve Injection' button, and handled the submission.
+  - Added a green confirmation banner on success and logic to clear the mock data table.
+- **Errors Flagged:** None. The core approval loop is fully built.
+- **Current Status:** Next.js dashboard is wired to the TrueForge API. Hackathon "Human Approval" requirement fulfilled.
