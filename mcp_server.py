@@ -1,53 +1,77 @@
-import asyncio
 import os
-import asyncpg
-from mcp.server.fastmcp import FastMCP
+import psycopg2
+from mcp.server.mcpserver import MCPServer
 
-mcp = FastMCP("Arceus Database Connector")
+mcp = MCPServer("Arceus Database Connector")
 
-async def get_db_connection():
-    return await asyncpg.connect(
+def get_db_connection():
+    return psycopg2.connect(
         user=os.getenv("POSTGRES_USER", "postgres"),
         password=os.getenv("POSTGRES_PASSWORD", "password"),
-        database=os.getenv("POSTGRES_DB", "arceus"),
+        dbname=os.getenv("POSTGRES_DB", "arceus"),
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=os.getenv("POSTGRES_PORT", "5432")
     )
 
 @mcp.tool()
-async def read_database_schema() -> str:
-    """Reads the database schema from the connected PostgreSQL instance."""
+def get_table_schema(table_name: str) -> str:
+    """Queries the PostgreSQL information schema to return the column names and data types."""
     try:
-        conn = await get_db_connection()
+        conn = get_db_connection()
+        cur = conn.cursor()
         query = """
-            SELECT table_name, column_name, data_type 
+            SELECT column_name, data_type 
             FROM information_schema.columns 
-            WHERE table_schema = 'public'
-            ORDER BY table_name, ordinal_position;
+            WHERE table_schema = 'public' AND table_name = %s
+            ORDER BY ordinal_position;
         """
-        rows = await conn.fetch(query)
-        await conn.close()
+        cur.execute(query, (table_name,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
         
         if not rows:
-            return "No tables found in public schema."
+            return f"No columns found for table '{table_name}'."
             
-        schema_dict = {}
+        schema_str = f"Schema for {table_name}:\n"
         for row in rows:
-            table = row['table_name']
-            if table not in schema_dict:
-                schema_dict[table] = []
-            schema_dict[table].append(f"{row['column_name']} ({row['data_type']})")
-            
-        schema_str = "Database Schema:\n"
-        for table, cols in schema_dict.items():
-            schema_str += f"Table: {table}\n"
-            for col in cols:
-                schema_str += f"  - {col}\n"
+            schema_str += f"  - {row[0]} ({row[1]})\n"
         return schema_str
     except Exception as e:
-        return f"Error connecting to or reading from database: {e}"
+        return f"Error reading schema: {e}"
+
+@mcp.tool()
+def insert_mock_data(table_name: str, rows: list) -> str:
+    """Takes the approved JSON array and executes the SQL INSERT statements safely."""
+    if not rows:
+        return "No rows provided for insertion."
+        
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # We assume all rows in the list are dicts with the same keys
+        columns = list(rows[0].keys())
+        col_names = ", ".join(columns)
+        placeholders = ", ".join(["%s"] * len(columns))
+        
+        insert_query = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
+        
+        # Prepare the list of tuples for executiom
+        data_tuples = []
+        for row in rows:
+            # ensure order matches
+            data_tuples.append(tuple(row[col] for col in columns))
+            
+        cur.executemany(insert_query, data_tuples)
+        conn.commit()
+        
+        count = cur.rowcount
+        cur.close()
+        conn.close()
+        return f"Successfully inserted {count} rows into {table_name}."
+    except Exception as e:
+        return f"Error inserting data: {e}"
 
 if __name__ == "__main__":
-    # In a real environment, you might run via FastMCP CLI or start it manually
-    print("MCP Server initialized. Run via FastMCP standard procedures.")
     mcp.run(transport='stdio')
