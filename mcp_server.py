@@ -18,20 +18,19 @@ def get_db_connection():
 @mcp.tool()
 def get_table_schema(table_name: str) -> str:
     """Queries the PostgreSQL information schema to return the column names and data types."""
+    conn = None
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        query = """
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_schema = 'public' AND table_name = %s
-            ORDER BY ordinal_position;
-        """
-        cur.execute(query, (table_name,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        
+        with conn.cursor() as cur:
+            query = """
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' AND table_name = %s
+                ORDER BY ordinal_position;
+            """
+            cur.execute(query, (table_name,))
+            rows = cur.fetchall()
+            
         if not rows:
             return f"No columns found for table '{table_name}'."
             
@@ -41,6 +40,9 @@ def get_table_schema(table_name: str) -> str:
         return schema_str
     except Exception as e:
         return f"Error reading schema: {e}"
+    finally:
+        if conn:
+            conn.close()
 
 @mcp.tool()
 def insert_mock_data(table_name: str, rows: list) -> str:
@@ -48,45 +50,48 @@ def insert_mock_data(table_name: str, rows: list) -> str:
     if not rows:
         return "No rows provided for insertion."
         
+    conn = None
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # We assume all rows in the list are dicts with the same keys
-        columns = list(rows[0].keys())
-        
-        # 1. Validate table and columns against schema
-        schema = introspect()
-        if table_name not in schema["tables"]:
-            return f"Error: Table '{table_name}' does not exist in the schema."
+        with conn.cursor() as cur:
+            # We assume all rows in the list are dicts with the same keys
+            columns = list(rows[0].keys())
             
-        valid_columns = {c["column"] for c in schema["tables"][table_name]}
-        for col in columns:
-            if col not in valid_columns:
-                return f"Error: Column '{col}' does not exist in table '{table_name}'."
-        
-        # 2. Build safe query using psycopg2.sql
-        insert_query = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
-            sql.Identifier(table_name),
-            sql.SQL(", ").join(map(sql.Identifier, columns)),
-            sql.SQL(", ").join(sql.Placeholder() * len(columns))
-        )
-        
-        # Prepare the list of tuples for executiom
-        data_tuples = []
-        for row in rows:
-            # ensure order matches
-            data_tuples.append(tuple(row[col] for col in columns))
+            # 1. Validate table and columns against schema
+            schema = introspect()
+            if table_name not in schema["tables"]:
+                return f"Error: Table '{table_name}' does not exist in the schema."
+                
+            valid_columns = {c["column"] for c in schema["tables"][table_name]}
+            for col in columns:
+                if col not in valid_columns:
+                    return f"Error: Column '{col}' does not exist in table '{table_name}'."
             
-        cur.executemany(insert_query, data_tuples)
-        conn.commit()
-        
-        count = cur.rowcount
-        cur.close()
-        conn.close()
-        return f"Successfully inserted {count} rows into {table_name}."
+            # 2. Build safe query using psycopg2.sql
+            insert_query = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+                sql.Identifier(table_name),
+                sql.SQL(", ").join(map(sql.Identifier, columns)),
+                sql.SQL(", ").join(sql.Placeholder() * len(columns))
+            )
+            
+            # Prepare the list of tuples for executiom
+            data_tuples = []
+            for row in rows:
+                # ensure order matches
+                data_tuples.append(tuple(row[col] for col in columns))
+                
+            cur.executemany(insert_query, data_tuples)
+            conn.commit()
+            
+            count = cur.rowcount
+            return f"Successfully inserted {count} rows into {table_name}."
     except Exception as e:
+        if conn:
+            conn.rollback()
         return f"Error inserting data: {e}"
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     mcp.run(transport='stdio')
