@@ -49,3 +49,13 @@
 **Trade-off accepted:** Doesn't test circular FKs or self-referencing tables — will add if encountered.
 **Confidence:** High
 **Reversible:** Yes
+
+---
+
+## [2026-08-28] Dependency Ordering — Kahn's Topological Sort
+**Decision:** Use Kahn's algorithm (BFS-based topological sort) for table generation ordering.
+**Alternatives considered:** DFS-based topological sort, `networkx.topological_sort()`, manual ordering.
+**Why this one:** Kahn's algorithm naturally detects cycles (any node with remaining in-degree > 0 is in a cycle), which we need to flag explicitly per the hard rules. No external dependency needed (`networkx` avoided). Deterministic output via sorted tie-breaking.
+**Trade-off accepted:** Slightly more code than a one-liner `networkx` call, but avoids adding a dependency for a single function.
+**Confidence:** High
+**Reversible:** Yes

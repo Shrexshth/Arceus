@@ -62,3 +62,12 @@
 **How it was tested:** Ran `python3 schema_introspector.py` inside `.venv` against live Postgres container with the 4-table test schema.
 **Result:** All 4 tables detected. All 24 columns with correct types/nullability/defaults. All 4 PKs found. All 3 FK relationships correct (`orders→users`, `order_items→orders`, `order_items→products`). All 3 unique constraints found including composite `(order_id, product_id)`.
 **Open issues:** none — awaiting approval to proceed to Phase 2.
+
+---
+
+## [2026-08-28] Phase 2: Dependency Graph + Generation Order
+**Status:** done
+**What was done:** Created `dependency_graph.py` using Kahn's topological sort. Builds adjacency list from FK relationships, produces a generation order (parents before children), and explicitly detects/flags self-referencing FKs and circular dependencies instead of guessing.
+**How it was tested:** Ran `python3 dependency_graph.py` inside `.venv` against live Postgres container with 4-table schema (`users`, `products`, `orders`, `order_items`).
+**Result:** Correct order: `products → users → orders → order_items`. All 3 FK edges respected. 0 self-referencing FKs. 0 circular dependencies. Composite unique constraint `(order_id, product_id)` carried through.
+**Open issues:** none
